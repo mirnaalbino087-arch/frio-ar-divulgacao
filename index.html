@@ -109,5 +109,233 @@ async function copiar(){
 }
 gerar('geral');
 </script>
+
+<!-- =========================================================
+     FRIO AR — CLONAR GRUPO + DIVULGAÇÃO
+     ========================================================= -->
+<section id="clonar-grupo" class="frio-clone-card">
+  <div class="frio-clone-header">
+    <span class="frio-clone-icon">👥</span>
+    <div>
+      <h2>Clonar Grupo + 📸 Divulgação</h2>
+      <p>Prepare modelos de divulgação para diferentes grupos.</p>
+    </div>
+  </div>
+
+  <div class="frio-grid">
+    <label>📝 Nome do grupo original
+      <input id="fg-original" type="text" placeholder="Ex.: Grupo Clientes">
+    </label>
+    <label>✨ Nome do novo grupo
+      <input id="fg-novo" type="text" placeholder="Ex.: Grupo Promoções">
+    </label>
+    <label>🎯 Grupo de destino
+      <input id="fg-destino" type="text" placeholder="Ex.: Grupo VIP">
+    </label>
+    <label>🔗 Link do grupo
+      <input id="fg-link" type="url" placeholder="Cole o link do WhatsApp">
+    </label>
+  </div>
+
+  <label>📄 Descrição
+    <textarea id="fg-descricao" rows="3" placeholder="Descrição do grupo..."></textarea>
+  </label>
+
+  <label>📢 Mensagem de divulgação
+    <textarea id="fg-mensagem" rows="5" placeholder="Digite a mensagem que será divulgada..."></textarea>
+  </label>
+
+  <div class="frio-media">
+    <label class="frio-upload">
+      📸 Adicionar fotos
+      <input id="fg-fotos" type="file" accept="image/*" multiple>
+    </label>
+    <label class="frio-upload">
+      🎥 Adicionar vídeos
+      <input id="fg-videos" type="file" accept="video/*" multiple>
+    </label>
+  </div>
+
+  <div id="fg-preview" class="frio-preview"></div>
+
+  <div class="frio-actions">
+    <button type="button" id="fg-copy">📋 Copiar dados</button>
+    <button type="button" id="fg-whatsapp">💬 Abrir WhatsApp</button>
+    <button type="button" id="fg-save">💾 Salvar modelo</button>
+    <button type="button" id="fg-new">🔄 Novo modelo</button>
+  </div>
+
+  <div class="frio-models">
+    <h3>📚 Meus modelos</h3>
+    <div id="fg-models"></div>
+  </div>
+</section>
+
+<style>
+.frio-clone-card{margin:24px auto;padding:20px;max-width:980px;border-radius:20px;background:#fff;box-shadow:0 8px 30px rgba(0,0,0,.10)}
+.frio-clone-header{display:flex;gap:12px;align-items:center;margin-bottom:18px}
+.frio-clone-icon{font-size:34px}
+.frio-clone-header h2{margin:0;font-size:1.35rem}
+.frio-clone-header p{margin:4px 0 0;opacity:.7}
+.frio-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.frio-clone-card label{display:block;font-weight:600;margin:10px 0}
+.frio-clone-card input,.frio-clone-card textarea{display:block;width:100%;box-sizing:border-box;margin-top:6px;padding:11px 12px;border:1px solid #ddd;border-radius:12px;font:inherit}
+.frio-media{display:flex;gap:12px;flex-wrap:wrap;margin:12px 0}
+.frio-upload{padding:12px 15px;border:1px dashed #bbb;border-radius:12px;cursor:pointer;background:#fafafa}
+.frio-upload input{display:none}
+.frio-preview{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;margin:12px 0}
+.frio-preview figure{margin:0;border-radius:12px;overflow:hidden;background:#f5f5f5}
+.frio-preview img,.frio-preview video{display:block;width:100%;height:120px;object-fit:cover}
+.frio-preview figcaption{padding:6px;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.frio-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.frio-actions button{border:0;border-radius:12px;padding:11px 14px;cursor:pointer;font-weight:700}
+.frio-models{margin-top:22px}
+.fg-model{padding:12px;margin:10px 0;border:1px solid #e5e5e5;border-radius:14px;background:#fafafa}
+.fg-model-title{font-weight:800}
+.fg-model small{display:block;opacity:.7;margin:4px 0 9px}
+.fg-model button{margin:3px;padding:8px 10px;border:0;border-radius:9px;cursor:pointer}
+@media(max-width:650px){.frio-grid{grid-template-columns:1fr}.frio-clone-card{margin:12px;padding:15px}}
+</style>
+
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const key = "frioArGrupoModelosV1";
+  let media = [];
+
+  function esc(s){
+    return String(s||"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
+  }
+
+  function fields(){
+    return {
+      original:$("fg-original").value.trim(),
+      novo:$("fg-novo").value.trim(),
+      destino:$("fg-destino").value.trim(),
+      link:$("fg-link").value.trim(),
+      descricao:$("fg-descricao").value.trim(),
+      mensagem:$("fg-mensagem").value.trim()
+    };
+  }
+
+  function clearForm(){
+    ["fg-original","fg-novo","fg-destino","fg-link","fg-descricao","fg-mensagem"].forEach(id=>$(id).value="");
+    $("fg-fotos").value="";
+    $("fg-videos").value="";
+    media=[];
+    renderPreview();
+  }
+
+  function renderPreview(){
+    const box=$("fg-preview");
+    box.innerHTML="";
+    media.forEach(m=>{
+      const fig=document.createElement("figure");
+      if(m.type.startsWith("image/")){
+        const img=document.createElement("img"); img.src=m.url; fig.appendChild(img);
+      }else{
+        const v=document.createElement("video"); v.src=m.url; v.controls=true; fig.appendChild(v);
+      }
+      const cap=document.createElement("figcaption"); cap.textContent=m.name; fig.appendChild(cap);
+      box.appendChild(fig);
+    });
+  }
+
+  function addFiles(list){
+    [...list].forEach(file=>{
+      const reader=new FileReader();
+      reader.onload=()=>{
+        media.push({name:file.name,type:file.type,url:reader.result});
+        renderPreview();
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function loadModels(){
+    try{return JSON.parse(localStorage.getItem(key)||"[]")}catch(e){return []}
+  }
+  function saveModels(arr){localStorage.setItem(key,JSON.stringify(arr));}
+
+  function renderModels(){
+    const box=$("fg-models"), arr=loadModels();
+    box.innerHTML=arr.length ? "" : "<p>Nenhum modelo salvo ainda.</p>";
+    arr.forEach((m,i)=>{
+      const div=document.createElement("div");
+      div.className="fg-model";
+      div.innerHTML=`<div class="fg-model-title">${esc(m.novo||"Modelo sem nome")}</div>
+        <small>🎯 ${esc(m.destino||"Sem grupo de destino")} · 📸 ${(m.media||[]).filter(x=>x.type.startsWith("image/")).length} · 🎥 ${(m.media||[]).filter(x=>x.type.startsWith("video/")).length}</small>
+        <button data-load="${i}">📂 Abrir</button>
+        <button data-copy="${i}">📋 Copiar</button>
+        <button data-del="${i}">🗑️ Excluir</button>`;
+      box.appendChild(div);
+    });
+  }
+
+  function copyText(data){
+    const text =
+`👥 GRUPO DE DIVULGAÇÃO
+📝 Original: ${data.original}
+✨ Novo grupo: ${data.novo}
+🎯 Destino: ${data.destino}
+📄 Descrição: ${data.descricao}
+📢 Mensagem: ${data.mensagem}
+🔗 Link: ${data.link}`;
+    navigator.clipboard.writeText(text).then(()=>alert("Dados copiados!")).catch(()=>alert("Não foi possível copiar automaticamente."));
+  }
+
+  $("fg-fotos").addEventListener("change",e=>addFiles(e.target.files));
+  $("fg-videos").addEventListener("change",e=>addFiles(e.target.files));
+
+  $("fg-copy").addEventListener("click",()=>copyText(fields()));
+
+  $("fg-whatsapp").addEventListener("click",()=>{
+    const d=fields();
+    const text=`${d.mensagem}\n\n🎯 Grupo: ${d.destino}\n🔗 ${d.link}`;
+    window.open("https://wa.me/?text="+encodeURIComponent(text),"_blank");
+  });
+
+  $("fg-save").addEventListener("click",()=>{
+    const d=fields();
+    if(!d.novo){alert("Digite o nome do novo grupo."); return;}
+    const arr=loadModels();
+    arr.push({...d,media,createdAt:new Date().toISOString()});
+    try{
+      saveModels(arr);
+      alert("Modelo salvo no celular!");
+      renderModels();
+    }catch(e){
+      alert("O modelo é muito grande para o armazenamento do navegador. Tente usar menos fotos/vídeos.");
+    }
+  });
+
+  $("fg-new").addEventListener("click",clearForm);
+
+  $("fg-models").addEventListener("click",e=>{
+    const b=e.target.closest("button"); if(!b)return;
+    const i=Number(b.dataset.load ?? b.dataset.copy ?? b.dataset.del);
+    const arr=loadModels(), m=arr[i]; if(!m)return;
+    if(b.dataset.del!==undefined){
+      if(confirm("Excluir este modelo?")){arr.splice(i,1);saveModels(arr);renderModels();}
+    }else if(b.dataset.copy!==undefined){
+      copyText(m);
+    }else{
+      $("fg-original").value=m.original||"";
+      $("fg-novo").value=m.novo||"";
+      $("fg-destino").value=m.destino||"";
+      $("fg-link").value=m.link||"";
+      $("fg-descricao").value=m.descricao||"";
+      $("fg-mensagem").value=m.mensagem||"";
+      media=m.media||[];
+      renderPreview();
+      window.scrollTo({top:$("clonar-grupo").offsetTop-20,behavior:"smooth"});
+    }
+  });
+
+  renderModels();
+})();
+</script>
+<!-- FIM CLONAR GRUPO -->
+
 </body>
 </html>
